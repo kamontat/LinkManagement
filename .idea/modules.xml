@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/jHTML.iml" filepath="$PROJECT_DIR$/jHTML.iml" />
+      <module fileurl="file://$PROJECT_DIR$/URLManager.iml" filepath="$PROJECT_DIR$/URLManager.iml" />
     </modules>
   </component>
 </project>
