@@ -45,7 +45,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <destDir>${project.build.directory}/doc</destDir>
+                            <destDir>${project.build.directory}/docs</destDir>
                             <excludePackageNames>com.kamontat.example</excludePackageNames>
                             <includeDependencySources>true</includeDependencySources>
                         </configuration>
