@@ -27,7 +27,7 @@ public enum RequestMethod {
 	 * <p>
 	 * A POST request is typically sent via an HTML form and results in a change on the server. In this case, the content type is selected by putting the adequate string in the enctype attribute of the &lt;form&gt; element or the formenctype attribute of the &lt;input&gt; or &lt;button&gt; elements:
 	 * <ul>
-	 * <li>application/x-www-form-urlencoded: the values are encoded in key-value tuples separated by '&', with a '=' between the key and the value. Non-alphanumeric characters are percent encoded: this is the reason why this type is not suitable to use with binary data (use application/form-data instead)</li>
+	 * <li>application/x-www-form-urlencoded: the values are encoded in key-value tuples separated by '&amp;', with a '=' between the key and the value. Non-alphanumeric characters are percent encoded: this is the reason why this type is not suitable to use with binary data (use application/form-data instead)</li>
 	 * <li>application/form-data</li>
 	 * <li>text/plain</li>
 	 * </ul>
