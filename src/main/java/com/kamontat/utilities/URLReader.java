@@ -133,6 +133,9 @@ public class URLReader implements Callable<Long> {
 		return -1;
 	}
 	
+	/**
+	 * set this method before {@link #read()}
+	 */
 	public void setInput() {
 		if (inStream == null) inStream = URLManager.getUrl(url).getInputStream();
 		bytesRead = 0;
