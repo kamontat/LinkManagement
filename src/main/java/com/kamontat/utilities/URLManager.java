@@ -187,8 +187,6 @@ public class URLManager {
 		return filename;
 	}
 	
-	// <b>Beware</b>: this can call iff connection is {@link Protocol#HTTPS}.
-	
 	/**
 	 * @param method
 	 * 		request method {@link RequestMethod}
