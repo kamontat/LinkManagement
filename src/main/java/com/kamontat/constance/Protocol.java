@@ -11,8 +11,23 @@ import java.util.*;
  * @since Sun 26/Mar/2017 - 8:54 PM
  */
 public enum Protocol {
-	HTTP,
-	HTTPS;
+	HTTP("http://"),
+	HTTPS("https://");
+	
+	private String string;
+	
+	Protocol(String s) {
+		string = s;
+	}
+	
+	/**
+	 * <b>Format</b>: {@code http://} or {@code https://}
+	 *
+	 * @return string protocol
+	 */
+	public String getProtocol() {
+		return string;
+	}
 	
 	/**
 	 * get protocol from link
@@ -23,7 +38,19 @@ public enum Protocol {
 	 */
 	public static Protocol getProtocol(URL url) {
 		if (url == null) return null;
-		return url.getProtocol().contains(HTTPS.name().toLowerCase()) ? HTTPS: HTTP;
+		return url.getProtocol().toLowerCase(Locale.ENGLISH).contains(HTTPS.toString()) ? HTTPS: HTTP;
+	}
+	
+	/**
+	 * check contains protocol with input string
+	 *
+	 * @param link
+	 * 		link or protocol
+	 * @return protocol
+	 */
+	public static Protocol getProtocol(String link) {
+		if (link == null) return null;
+		return link.toLowerCase(Locale.ENGLISH).contains(HTTPS.toString()) ? HTTPS: HTTP;
 	}
 	
 	@Override

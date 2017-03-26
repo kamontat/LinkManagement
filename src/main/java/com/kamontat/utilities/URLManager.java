@@ -44,19 +44,6 @@ public class URLManager {
 	 */
 	private URL url;
 	
-	/**
-	 * get url utility
-	 *
-	 * @param protocol
-	 * 		web protocol
-	 * @param link
-	 * 		web link (without <b>http://</b> or <b>https://</b>)
-	 * @return url utility
-	 * @see URLManager
-	 */
-	public static URLManager getUrl(Protocol protocol, String link) {
-		return new URLManager(protocol, link);
-	}
 	
 	/**
 	 * get url utility
@@ -79,12 +66,25 @@ public class URLManager {
 	 * @see URLManager
 	 */
 	public static URLManager getUrl(String link) {
-		URL url = null;
-		try {
-			url = new URL(link);
-		} catch (MalformedURLException ignore) {
-		}
-		return new URLManager(url);
+		Protocol p = Protocol.getProtocol(link);
+		if (p == null) return getUrl(Protocol.HTTP, link);
+		
+		return getUrl(p, link.replace(p.getProtocol(), "").replace(p.toString(), ""));
+	}
+	
+	/**
+	 * get url utility
+	 *
+	 * @param protocol
+	 * 		web protocol
+	 * @param link
+	 * 		web link (without <b>http://</b> or <b>https://</b>)
+	 * @return url utility
+	 * @see URLManager
+	 */
+	public static URLManager getUrl(Protocol protocol, String link) {
+		if (protocol == null) protocol = Protocol.HTTP;
+		return new URLManager(protocol, link);
 	}
 	
 	/**
@@ -98,11 +98,14 @@ public class URLManager {
 	private URLManager(Protocol protocol, String link) {
 		this.protocol = protocol;
 		// add protocol
-		link = (protocol == Protocol.HTTP ? "http://": "https://") + link;
+		link = protocol.getProtocol() + link;
 		
 		try {
 			url = new URL(link);
 		} catch (MalformedURLException ignore) {
+			if (protocol == Protocol.HTTP) protocol = Protocol.HTTPS;
+			else protocol = Protocol.HTTP;
+			new URLManager(protocol, link);
 		}
 	}
 	
@@ -128,6 +131,10 @@ public class URLManager {
 	/**
 	 * get connection
 	 *
+	 * @param tClass
+	 * 		output class
+	 * @param <T>
+	 * 		the class to cast (beware if it cause {@link ClassCastException} this method will return null)
 	 * @return url connection
 	 * @see URL#openConnection() or {@code null}
 	 */
@@ -136,6 +143,18 @@ public class URLManager {
 		try {
 			return tClass.cast(url.openConnection());
 		} catch (IOException | ClassCastException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	/**
+	 * @return input stream or {@code null}
+	 */
+	public InputStream getInputStream() {
+		try {
+			return getConnection(URLManager.CONNECTION).getInputStream();
+		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -152,7 +171,7 @@ public class URLManager {
 		
 		try {
 			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(getConnection(CONNECTION).getInputStream()));
-			String line = "";
+			String line;
 			while ((line = bufferedReader.readLine()) != null) {
 				builder.append(line).append("\n");
 			}
@@ -180,9 +199,11 @@ public class URLManager {
 	 * @return file name
 	 */
 	public String getURLFilename() {
+		if (checkNull()) return "";
+		
 		String filename = url.getPath();
 		int k = filename.lastIndexOf("/");
-		if (k == filename.length() - 1) return "";
+		if (k == filename.length() - 1 || k < 0) return "";
 		if (k >= 0) filename = filename.substring(k + 1);
 		return filename;
 	}
@@ -215,7 +236,7 @@ public class URLManager {
 			
 			if (input != null) {
 				c.setDoOutput(true);
-				c.getOutputStream().write(input.getBytes(FilesUtil.DEFAULT_ENCODING));
+				c.getOutputStream().write(input.getBytes());
 			}
 			
 			return c.getInputStream();
@@ -247,6 +268,11 @@ public class URLManager {
 		for (Object key : header.keySet()) {
 			System.out.printf("%s: %s\n", key, header.get(key));
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "URLManager{" + "protocol=" + protocol + ", url=" + url + '}';
 	}
 	
 	private boolean checkNull() {

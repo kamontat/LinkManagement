@@ -3,8 +3,9 @@ package com.kamontat.utilities;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.concurrent.Callable;
 
-// This is a decorator (wrapper) for an InputStream that you can monitor read progress.
+// This is a decorator (wrapper) for an InputStream that you can monitor readAll progress.
 //import javax.swing.ProgressMonitorInputStream;
 
 /**
@@ -12,16 +13,17 @@ import java.net.URLConnection;
  *
  * @author James Brucker
  */
-public class URLReader implements Runnable {
+public class URLReader implements Callable<Long> {
 	private URL url;
 	private URLConnection connection;
 	private InputStream inStream;
-	private int bytesRead; // number of bytes read so far
-	private static final int BUFFER_SIZE = 32 * 1024; // default buffer size for read
+	public static int BUFFER_SIZE = 32 * 1024; // default buffer size for readAll
+	
+	private long bytesRead; // number of bytes read so far
 	/**
-	 * length of URL stream, lazily determined.
+	 * length/size of URL stream.
 	 */
-	private int urlSize;
+	private long urlSize;
 	/**
 	 * The output file.
 	 */
@@ -36,7 +38,7 @@ public class URLReader implements Runnable {
 	 * <b>precondition</b>: url is a valid URL, outfile is a valid writable file or directory.
 	 *
 	 * @param url
-	 * 		is the URL to read from
+	 * 		is the URL to readAll from
 	 * @param outfile
 	 * 		is a File output to write output to. If it is a writable directory
 	 * 		then a file is created in that directory with same name as the download resource.
@@ -56,14 +58,9 @@ public class URLReader implements Runnable {
 		
 		this.url = url;
 		this.bytesRead = 0;
+		this.urlSize = URLManager.getUrl(url).getURLSize();
 		if (outfile.isDirectory()) {
-			// create a file in directory having same name as the URL resource name
-			String filename = url.getPath();
-			int k = filename.lastIndexOf("/");
-			if (k >= 0) {
-				if (k == filename.length() - 1) filename = "noname";
-				else filename = filename.substring(k + 1); // could fail
-			}
+			String filename = URLManager.getUrl(url).getURLFilename();
 			outfile = new File(outfile, filename);
 		}
 		this.outfile = outfile;
@@ -72,65 +69,73 @@ public class URLReader implements Runnable {
 		outStream = new FileOutputStream(outfile); // "rwd" mode?
 	}
 	
-	private InputStream getInputStream() throws IOException {
-		return url.openStream();
-	}
-	
 	/**
 	 * Get the number of bytes downloaded so far.
 	 *
 	 * @return number of bytes downloaded from URL so far.
 	 */
-	public int getBytesRead() {
+	public long getBytesRead() {
 		return bytesRead;
+	}
+	
+	public long getTotalByte() {
+		return urlSize;
 	}
 	
 	/**
 	 * Read the URL connection and save bytes to output file.
-	 * This method will block until the entire URL content is read.
+	 * This method will block until the entire URL content is readAll.
 	 * While reading, the bytesRead object attribute is regularly updated.
 	 *
-	 * @return the number of bytes actually read
+	 * @return the number of bytes actually readAll
+	 * @throws IOException
+	 * 		when IO error cause
 	 */
-	public int readURL() {
+	public long readAll() throws IOException {
 		bytesRead = 0;
 		byte[] buff = new byte[BUFFER_SIZE];
 		try {
-			inStream = getInputStream();
+			setInput();
+			if (inStream == null) return bytesRead;
 			do {
-				int n = inStream.read(buff);
-				if (n < 0) break; // read returns -1 at end of input
-				outStream.write(buff, 0, n);
+				int n = read();
+				if (n < 0) break;
 				bytesRead += n;
 			} while (true);
-		} catch (IOException e) {
-			System.err.println("readURL: " + e);
 		} finally {
-			if (inStream != null) try {
-				inStream.close();
-			} catch (IOException e) { /* who cares? its not my data. */ }
-			try {
-				outStream.close();
-			} catch (IOException e) { /* ignore it */ }
+			if (inStream != null) inStream.close();
+			inStream = null;
+			outStream.close();
+			outStream = null;
 		}
 		return bytesRead;
 	}
 	
 	/**
-	 * Get the size in bytes of the URL to download.
+	 * <b>precondition</b>: you need to call {@link #setInput()} first. <br>
+	 * work like {@link InputStream#read(byte[])} with {@link #BUFFER_SIZE}, but add more action is save the result to output stream.
 	 *
-	 * @return the size in bytes of the URL to download, -1 if cannot determine.
+	 * @return size that read. or {@code null} if cause error
 	 */
-	public int getSize() {
-		if (urlSize > 0) return urlSize;
-		if (url == null) return 0;
+	public int read() {
+		byte[] buff = new byte[BUFFER_SIZE];
+		if (inStream == null) return -1;
 		try {
-			URLConnection connection = url.openConnection();
-			urlSize = connection.getContentLength();
+			int n = inStream.read(buff);
+			if (n < 0) return n;
+			outStream.write(buff, 0, n);
+			// update byte read
+			bytesRead += n;
+			return n;
 		} catch (IOException e) {
-			urlSize = -1;
+			e.printStackTrace();
 		}
-		return urlSize;
+		return -1;
+	}
+	
+	public void setInput() {
+		if (inStream == null) inStream = URLManager.getUrl(url).getInputStream();
+		bytesRead = 0;
 	}
 	
 	/**
@@ -143,9 +148,10 @@ public class URLReader implements Runnable {
 	}
 	
 	/**
-	 * start the URL reader. On completion the output stream is closed.
+	 * start the URL reader. and close connection while finish
 	 */
-	public void run() {
-		readURL();
+	@Override
+	public Long call() throws Exception {
+		return readAll();
 	}
 }
