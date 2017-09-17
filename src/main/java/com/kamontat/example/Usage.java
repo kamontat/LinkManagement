@@ -32,7 +32,8 @@ public class Usage {
 		URLReader r = new URLReader(manager.getUrl(), Paths.get(".").toFile());
 		// execute in background
 		ReaderBackground bg = new ReaderBackground(r);
+		bg.addPropertyChangeListener(System.out::println);
 		// run
-		bg.execute();
+		bg.run();
 	}
 }

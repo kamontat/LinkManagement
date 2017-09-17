@@ -20,12 +20,10 @@ public class PostMethod {
 		// get more useful project to convert at `https://github.com/kamontat/Conversion`
 		String test = "**Today** is `monday`, *Tomorrow* is # Tuesday #";
 		
-		RequestMethod m = RequestMethod.POST;
-		
 		RequestProp p1 = new RequestProp(Headers.Content_Type, ContentType.get(Type.TEXT, ContentType.PLAIN));
 		RequestProp p2 = new RequestProp(Headers.Content_Length, String.valueOf(test.length()));
 		
-		InputStream stream = URLManager.getUrl(Protocol.HTTPS, "api.github.com/markdown/raw").getSpecifyInputFromConnection(m, test, p1, p2);
+		InputStream stream = URLManager.getUrl(Protocol.HTTPS, "api.github.com/markdown/raw").getSpecifyInputFromConnection(RequestMethod.POST, test, p1, p2);
 		
 		BufferedReader r = new BufferedReader(new InputStreamReader(stream));
 		Optional<String> optional = r.lines().reduce((s, s2) -> s.concat("\n").concat(s2));
