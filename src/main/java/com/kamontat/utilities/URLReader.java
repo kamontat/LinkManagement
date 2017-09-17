@@ -18,6 +18,7 @@ public class URLReader implements Callable<Long> {
 	private URLConnection connection;
 	private InputStream inStream;
 	public static int BUFFER_SIZE = 32 * 1024; // default buffer size for readAll
+	public static String PROPERLY_KEY = "VALUE";
 	
 	private long bytesRead; // number of bytes read so far
 	/**
@@ -64,9 +65,6 @@ public class URLReader implements Callable<Long> {
 			outfile = new File(outfile, filename);
 		}
 		this.outfile = outfile;
-		// don't open connection yet -- the server might close it before we run()
-		// create output writer
-		outStream = new FileOutputStream(outfile); // "rwd" mode?
 	}
 	
 	/**
@@ -96,7 +94,9 @@ public class URLReader implements Callable<Long> {
 		byte[] buff = new byte[BUFFER_SIZE];
 		try {
 			setInput();
-			if (inStream == null) return bytesRead;
+			setOutput();
+			if (inStream == null || outStream == null) return bytesRead;
+			
 			do {
 				int n = read();
 				if (n < 0) break;
@@ -119,7 +119,7 @@ public class URLReader implements Callable<Long> {
 	 */
 	public int read() {
 		byte[] buff = new byte[BUFFER_SIZE];
-		if (inStream == null) return -1;
+		if (inStream == null || outStream == null) return -1;
 		try {
 			int n = inStream.read(buff);
 			if (n < 0) return n;
@@ -134,11 +134,22 @@ public class URLReader implements Callable<Long> {
 	}
 	
 	/**
-	 * set this method before {@link #read()}
+	 * set this method once time, before {@link #read()}
 	 */
 	public void setInput() {
 		if (inStream == null) inStream = URLManager.getUrl(url).getInputStream();
 		bytesRead = 0;
+	}
+	
+	/**
+	 * set this method once time, before {@link #read()}
+	 */
+	public void setOutput() {
+		try {
+			outStream = new FileOutputStream(outfile); // "rwd" mode?
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
